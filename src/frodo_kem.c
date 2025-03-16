@@ -76,7 +76,7 @@ void frodo_kem_encaps(frodo_kem_pk pk, frodo_kem_cipher c, uchar ss[LEN_SS]) {
     shake128(pkh_mu, LEN_PKH + LEN_MU, LEN_BYTES_SEED_SE + LEN_K, seedSE_k);
 
     frodo_pke_pk pke_pk;
-    memcpy(&pke_pk, pk, LEN_BYTES_SEED_A);
+    memcpy(pke_pk.seedA, pk, LEN_BYTES_SEED_A);
     frodo_unpack(&pk[LEN_BYTES_SEED_A], N, NBAR, pke_pk.B);
 
     frodo_pke_cipher pke_c;
@@ -94,17 +94,53 @@ void frodo_kem_encaps(frodo_kem_pk pk, frodo_kem_cipher c, uchar ss[LEN_SS]) {
     shake128(buf, len_c1 + len_c2 + LEN_K, LEN_SS, ss);
 }
 
+int frodo_pke_cipher_eq(frodo_pke_cipher c1, frodo_pke_cipher c2) {
+    int len_c1 = MBAR * N;
+    int len_c2 = MBAR * NBAR;
+
+    int eq = 1;
+    for (int i = 0; i < len_c1; ++i)
+        eq &= c1.C1[i] == c2.C1[i];
+
+    for (int i = 0; i < len_c2; ++i)
+        eq &= c1.C2[i] == c2.C2[i];
+
+    return eq;
+}
+
 void frodo_kem_decaps(frodo_kem_sk sk, frodo_kem_cipher c, uchar ss[LEN_SS]) {
     int len_c1 = D_PARAM * MBAR * N;
 
-    frodo_pke_cipher pke_c;
+    frodo_pke_cipher pke_c; // = (B', C)
     frodo_unpack(c, MBAR, N, pke_c.C1);
     frodo_unpack(&c[len_c1], MBAR, NBAR, pke_c.C2);
 
-    uchar mu1[16];
+    uchar mu1[LEN_MU];
     frodo_pke_dec(sk.tS, pke_c, mu1);
-    (void)ss;
-    // TODO
+
+    frodo_pke_pk pke_pk;
+    memcpy(pke_pk.seedA, sk.pk, LEN_BYTES_SEED_A);
+    frodo_unpack(&sk.pk[LEN_BYTES_SEED_A], N, NBAR, pke_pk.B);
+
+    uchar seedSE_k[1 + LEN_BYTES_SEED_SE + LEN_K];
+    seedSE_k[0] = 0x96;
+    uchar pkhmu[LEN_PKH + LEN_PKH];
+    memcpy(pkhmu, sk.pkh, LEN_PKH);
+    memcpy(&pkhmu[LEN_PKH], mu1, LEN_MU);
+    shake128(pkhmu, LEN_PKH + LEN_MU, LEN_BYTES_SEED_SE + LEN_K, &seedSE_k[1]);
+    uchar *k1 = &seedSE_k[1 + LEN_BYTES_SEED_SE];
+
+    frodo_pke_cipher c1; // = (B'', C')
+    frodo_pke_enc(pke_pk, mu1, seedSE_k, &c1);
+
+    // LEN_S = LEN_K
+    uchar *buf = (uchar *)malloc(SIZE_CIPHER + LEN_S);
+    memcpy(buf, c, SIZE_CIPHER);
+    uchar *suffix = (frodo_pke_cipher_eq(pke_c, c1)) ? k1 : sk.s;
+    memcpy(&buf[SIZE_CIPHER], suffix, LEN_S);
+    shake128(buf, SIZE_CIPHER + LEN_S, LEN_SS, ss);
+
+    free(buf);
 }
 
 /************/
