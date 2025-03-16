@@ -1,3 +1,6 @@
 frodokeygen
 frodoencaps
 frododecaps
+*.dSYM
+.vscode
+.DS_Store
