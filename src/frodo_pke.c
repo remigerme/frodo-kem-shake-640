@@ -48,13 +48,16 @@ void frodo_pke_keygen(frodo_pke_pk *pk, frodo_pke_sk sk) {
     // 1 - Sampling seeds
     uchar seedSE[1 + LEN_BYTES_SEED_SE];
     seedSE[0] = 0x5f;
+    DEBUG_LOG("PKE - Sampling seeds\n");
     random_bytes(pk->seedA, LEN_BYTES_SEED_A);
     random_bytes(&seedSE[1], LEN_BYTES_SEED_SE);
 
     // 2 - Generating LWE matrix
+    DEBUG_LOG("PKE - Generate LWE matrix\n");
     uint16_t *A = compute_A(pk->seedA);
 
     // 3 - Sampling S and E
+    DEBUG_LOG("PKE - Sample S and E\n");
     uint16_t *S = (uint16_t *)malloc(sizeof(uint16_t) * N * NBAR);
     uint16_t *E = (uint16_t *)malloc(sizeof(uint16_t) * N * NBAR);
     uchar *r = (uchar *)malloc(2 * N * NBAR * LEN_CHI);
@@ -63,11 +66,13 @@ void frodo_pke_keygen(frodo_pke_pk *pk, frodo_pke_sk sk) {
     sample_matrix(E, N, NBAR, (uint16_t *)&r[N * NBAR * LEN_CHI]);
 
     // 4 - Computing B
-    mat_trans(S, N, NBAR, S);
+    DEBUG_LOG("PKE - Compute B\n");
+    mat_trans(S, NBAR, N, S);
     mat_mul(pk->B, N, N, NBAR, A, S);
     mat_add(pk->B, N, NBAR, pk->B, E);
 
     // 5 - Saving tS to sk
+    DEBUG_LOG("PKE - Save tS\n");
     mat_trans(sk, N, NBAR, S);
 
     free(A);

@@ -2,6 +2,7 @@
 #define FRODO_UTILS_H
 
 #include <inttypes.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define DISTRIB_S 12
