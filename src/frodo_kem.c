@@ -97,6 +97,7 @@ void frodo_kem_encaps(frodo_kem_pk pk, frodo_kem_cipher c, uchar ss[LEN_SS]) {
     for (int i = 0; i < N * NBAR; ++i)
         assert(temp[i] == pk[LEN_BYTES_SEED_A + i]);
     printf("Successfully packed unpacked values\n");
+    free(temp);
 #endif // FRODO_DEBUG
 
     frodo_pke_cipher pke_c;
