@@ -16,9 +16,28 @@ void random_bytes(uchar *buf, size_t size) {
     fclose(fd);
 }
 
-char SAMPLE_TABLE[DISTRIB_S] = {0}; // TODO
+// See table 3
+uint16_t PROBA_TABLE[DISTRIB_S + 1] = {9288, 8720, 7216, 5264, 3384, 1918, 958,
+                                       422,  164,  56,   17,   4,    1};
+
+uint16_t SAMPLE_TABLE[DISTRIB_S + 1];
+
+int FLAG[1] = {0};
+
+void init_sample_table() {
+    SAMPLE_TABLE[0] = PROBA_TABLE[0] / 2 - 1;
+    uint16_t partial_sum = 0;
+    for (int z = 1; z < LEN_CHI; ++z) {
+        partial_sum += PROBA_TABLE[z];
+        SAMPLE_TABLE[z] = SAMPLE_TABLE[0] + partial_sum;
+    }
+    FLAG[0] = 1;
+}
 
 uint16_t sample(uint16_t r) {
+    if (FLAG[0] == 0)
+        init_sample_table();
+
     uint16_t t = r >> 1;
     uint16_t e = 0;
     for (int z = 0; z < DISTRIB_S; ++z)
