@@ -19,7 +19,7 @@ void mat_mul(uint16_t *rop, size_t m, size_t n, size_t p, uint16_t *A,
             rop[p * i + j] = 0;
             for (size_t k = 0; k < n; ++k)
                 rop[p * i + j] =
-                    (rop[p * i + j] + (A[n * i + k] + B[p * k + j]) &
+                    (rop[p * i + j] + (A[n * i + k] * B[p * k + j]) &
                      (Q_PARAM - 1)) &
                     (Q_PARAM - 1);
         }
