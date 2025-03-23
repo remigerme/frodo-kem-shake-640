@@ -5,7 +5,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef FRODO_DEBUG
+#include <assert.h>
+#endif // FRODO_DEBUG
+
 void frodo_pack(uint16_t *C, size_t m, size_t n, uchar *b) {
+    memset(b, 0, D_PARAM * m * n / 8); // Initializing output buffer
     for (size_t i = 0; i < m; ++i) {
         for (size_t j = 0; j < n; ++j) {
             int idx = i * n + j;
@@ -18,6 +23,7 @@ void frodo_pack(uint16_t *C, size_t m, size_t n, uchar *b) {
 }
 
 void frodo_unpack(uchar *b, size_t m, size_t n, uint16_t *C) {
+    memset(C, 0, sizeof(uint16_t) * m * n); // Initializing output matrix
     for (size_t i = 0; i < m; ++i) {
         for (size_t j = 0; j < n; ++j) {
             int idx = i * n + j;
@@ -51,6 +57,13 @@ void frodo_kem_keygen(frodo_kem_pk pk, frodo_kem_sk *sk) {
     // Setting pk
     DEBUG_LOG("Calling Frodo.Pack\n");
     frodo_pack(pke_pk.B, N, NBAR, &pk[LEN_BYTES_SEED_A]);
+#ifdef FRODO_DEBUG
+    uint16_t temp[N * NBAR];
+    frodo_unpack(&pk[LEN_BYTES_SEED_A], N, NBAR, temp);
+    for (int i = 0; i < N * NBAR; ++i)
+        assert(temp[i] == pke_pk.B[i]);
+    printf("Successfully unpacked packed values\n");
+#endif // FRODO_DEBUG
     memcpy(pk, pke_pk.seedA, LEN_BYTES_SEED_A);
     memcpy(sk->pk, pk, SIZE_KEM_PK);
 
@@ -78,6 +91,13 @@ void frodo_kem_encaps(frodo_kem_pk pk, frodo_kem_cipher c, uchar ss[LEN_SS]) {
     frodo_pke_pk pke_pk;
     memcpy(pke_pk.seedA, pk, LEN_BYTES_SEED_A);
     frodo_unpack(&pk[LEN_BYTES_SEED_A], N, NBAR, pke_pk.B);
+#ifdef FRODO_DEBUG
+    uchar *temp = (uchar *)malloc(SIZE_KEM_PK);
+    frodo_pack(pke_pk.B, N, NBAR, temp);
+    for (int i = 0; i < N * NBAR; ++i)
+        assert(temp[i] == pk[LEN_BYTES_SEED_A + i]);
+    printf("Successfully packed unpacked values\n");
+#endif // FRODO_DEBUG
 
     frodo_pke_cipher pke_c;
     int len_c1 = D_PARAM * MBAR * N;
