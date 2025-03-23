@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -O2 -g -DFRODO_DEBUG
+CFLAGS = -Wall -Wextra -Werror -O2 # -g -DFRODO_DEBUG
 INCLUDES = -lm -Isrc -Isrc/sha3
 
 TARGETS = frodokeygen frodoencaps frododecaps
