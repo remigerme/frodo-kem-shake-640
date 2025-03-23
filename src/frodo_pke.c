@@ -19,14 +19,16 @@ uint16_t *compute_A(uchar seedA[LEN_BYTES_SEED_A]) {
 }
 
 void frodo_encode(uchar k[L], uint16_t K[MBAR * NBAR]) {
+    memset(K, 0, sizeof(uint16_t) * MBAR * NBAR);
+
     for (int i = 0; i < MBAR; ++i) {
         for (int j = 0; j < NBAR; ++j) {
             int idx = i * NBAR + j;
-            uint16_t temp = 0;
+            uint32_t temp = 0;
             for (int l = 0; l < B_PARAM; ++l)
                 if (get_bit_buffer(k, B_PARAM * idx + l))
                     temp += 1 << l;
-            K[idx] = (temp * Q_PARAM) >> B_PARAM;
+            K[idx] = (uint16_t)(((temp * Q_PARAM) >> B_PARAM) & (Q_PARAM - 1));
         }
     }
 }
@@ -39,8 +41,9 @@ void frodo_decode(uint16_t K[MBAR * NBAR], uchar k[L]) {
             int idx = i * NBAR + j;
 
             uint16_t Kij = K[idx];
-            uchar temp = (((Kij << B_PARAM) + (Q_PARAM >> 1)) / Q_PARAM) &
-                         ((1 << B_PARAM) - 1);
+            uchar temp =
+                (((((uint32_t)Kij) << B_PARAM) + (Q_PARAM - 1)) / Q_PARAM) &
+                ((1 << B_PARAM) - 1);
 
             for (int l = 0; l < B_PARAM; ++l)
                 set_bit_buffer(k, idx * B_PARAM + l, get_bit_u16(temp, l));
@@ -139,10 +142,13 @@ void frodo_pke_dec(frodo_pke_sk sk, frodo_pke_cipher c, uchar m[L]) {
     // 2 - Decoding
     frodo_decode(M, m);
 #ifdef FRODO_DEBUG
+    // THIS TEST FAILS, DON'T KNOW WHY
     uint16_t *temp = (uint16_t *)malloc(sizeof(uint16_t) * MBAR * NBAR);
     frodo_encode(m, temp);
-    for (int i = 0; i < MBAR * NBAR; ++i)
+    for (int i = 0; i < MBAR * NBAR; ++i) {
+        printf("%hu vs %hu\n", temp[i], M[i]);
         assert(temp[i] == M[i]);
+    }
     printf("Successfully encoded decoded values\n");
     free(temp);
 #endif // FRODO_DEBUG
