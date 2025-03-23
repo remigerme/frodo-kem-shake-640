@@ -5,6 +5,10 @@
 
 #include <string.h>
 
+#ifdef FRODO_DEBUG
+#include <assert.h>
+#endif // FRODO_DEBUG
+
 uint16_t *compute_A(uchar seedA[LEN_BYTES_SEED_A]) {
     int lenA = sizeof(uint16_t) * N * N; // in bytes
     uint16_t *A = (uint16_t *)malloc(lenA);
@@ -108,6 +112,14 @@ void frodo_pke_enc(frodo_pke_pk pk, uchar m[L],
     // 5 - Encode message
     uint16_t *M = (uint16_t *)malloc(sizeof(uint16_t) * MBAR * NBAR);
     frodo_encode(m, M);
+#ifdef FRODO_DEBUG
+    uchar temp[L];
+    frodo_decode(M, temp);
+    for (int i = 0; i < L; ++i)
+        assert(temp[i] == m[i]);
+    printf("Successfully decoded encoded values\n");
+#endif // FRODO_DEBUG
+
     mat_add(c->C2, MBAR, NBAR, c->C2, M);
 
     free(A);
@@ -126,6 +138,14 @@ void frodo_pke_dec(frodo_pke_sk sk, frodo_pke_cipher c, uchar m[L]) {
 
     // 2 - Decoding
     frodo_decode(M, m);
+#ifdef FRODO_DEBUG
+    uint16_t *temp = (uint16_t *)malloc(sizeof(uint16_t) * MBAR * NBAR);
+    frodo_encode(m, temp);
+    for (int i = 0; i < MBAR * NBAR; ++i)
+        assert(temp[i] == M[i]);
+    printf("Successfully encoded decoded values\n");
+    free(temp);
+#endif // FRODO_DEBUG
 
     free(M);
 }
